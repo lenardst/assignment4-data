@@ -60,6 +60,18 @@ if torch.cuda.is_available():
 install(show_locals=True)
 
 
+def _ensure_model_output_safe(model_output: Path, overwrite: bool) -> None:
+    model_pt = model_output / "model.pt"
+    model_cfg = model_output / "model_config.json"
+    if overwrite:
+        return
+    if model_pt.exists() or model_cfg.exists():
+        raise FileExistsError(
+            f"Model output already exists in {model_output}. "
+            "Use a new model_output path or set overwrite_model_output=True."
+        )
+
+
 def train_from_config(cfg: Config) -> None:
     train_data = np.memmap(cfg.paths.train_bin, dtype=np.uint16, mode="r")
     dev_data = np.memmap(cfg.paths.valid_bin, dtype=np.uint16, mode="r")
@@ -333,14 +345,18 @@ def run_modal_worker() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--train-bin", required=True)
     parser.add_argument("--valid-bin", default=DEFAULT_MODAL_VALID_BIN)
+    parser.add_argument("--model-output", default=DEFAULT_MODAL_MODEL_OUTPUT)
+    parser.add_argument("--overwrite-model-output", action="store_true")
     args = parser.parse_args()
+    model_output = Path(args.model_output)
+    _ensure_model_output_safe(model_output, overwrite=args.overwrite_model_output)
 
     train_from_config(
         Config(
             paths=PathsConfig(
                 train_bin=Path(args.train_bin),
                 valid_bin=Path(args.valid_bin),
-                model_output=Path(DEFAULT_MODAL_MODEL_OUTPUT),
+                model_output=model_output,
             ),
         )
     )
@@ -356,6 +372,8 @@ def run_modal_worker() -> None:
 )
 def run_modal_training(
     train_bin: str,
+    model_output: str = DEFAULT_MODAL_MODEL_OUTPUT,
+    overwrite_model_output: bool = False,
 ) -> None:
     local_train_bin, local_valid_bin = copy_data_to_local_disk(Path(train_bin), Path(DEFAULT_MODAL_VALID_BIN))
 
@@ -369,7 +387,11 @@ def run_modal_training(
         str(local_train_bin),
         "--valid-bin",
         str(local_valid_bin),
+        "--model-output",
+        model_output,
     ]
+    if overwrite_model_output:
+        command.append("--overwrite-model-output")
 
     subprocess.run(command, cwd="/root", check=True)
 
@@ -377,9 +399,13 @@ def run_modal_training(
 @app.local_entrypoint()
 def modal_main(
     train_bin: str,
+    model_output: str = DEFAULT_MODAL_MODEL_OUTPUT,
+    overwrite_model_output: bool = False,
 ) -> None:
     run_modal_training.remote(
         train_bin=train_bin,
+        model_output=model_output,
+        overwrite_model_output=overwrite_model_output,
     )
 
 
