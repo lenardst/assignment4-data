@@ -82,34 +82,30 @@ The first clearly high-quality page is example 7 (UBC biography). It took 7 exam
 
 \section{extract\_text}
 \subsection*{(a) Implementation}
-\answer{Script: \texttt{extract\_text\_from\_html\_bytes}.}
+\answer{Implemented in \texttt{cs336\_data/extract\_text.py}.}
 
 \subsection*{(b) Comparison with WET}
 \answer{Both extractions recover the main topic text. Both keep some structural content like menus and footers. The WET output is slightly cleaner because Common Crawl applies heuristics after plain HTML to text.}
 
 \section{language\_identification}
 \subsection*{(a) Implementation}
-\answer{I used fastText with \texttt{lid.176.bin}. Script: }
-TODO: add the script here
+\answer{Implemented in \texttt{cs336\_data/language\_id.py}.}
 
 \subsection*{(b) Risks and mitigations}
 \answer{Wrong language labels can drop target-language text or keep off-target text. This shifts the training distribution and hurts downstream quality. To reduce this risk, I use a confidence threshold and audit samples. I would track per-language retention over time. For low-confidence cases, I would use a second check or send them to an abstain bucket.}
 
 \subsection*{(c) Manual audit of 20 examples}
-\answer{I sampled 20 WET documents and compared predictions with my own labels. Predictions matched the document language in this sample. The English fraction was 8/20 = 40\%. A confidence threshold around 0.7 keeps clearly English pages and drops ambiguous ones. Script: }
-TODO: add the script here
+\answer{I sampled 20 WET documents and compared predictions with my own labels. Predictions matched the document language in this sample. The English fraction was 8/20 = 40\%. A confidence threshold around 0.7 keeps clearly English pages and drops ambiguous ones.}
 
 \section{mask\_pii}
 \subsection*{(a) Email masking}
-TODO: add the script here
-
-\answer{I used a regex for standard email shapes \texttt{local@domain.tld}. It replaces each match with \texttt{|||EMAIL\_ADDRESS|||} and returns the count via \texttt{re.subn}.}
+\answer{Implemented in \texttt{cs336\_data/pii\_masking.py}.}
 
 \subsection*{(b) Phone masking}
-\answer{I used a US-focused regex covering \texttt{2831823829}, \texttt{283-182-3829}, \texttt{(283)-182-3829}, and \texttt{(283) 182 3829}. Matches are replaced with \texttt{|||PHONE\_NUMBER|||}.}
+\answer{Implemented in \texttt{cs336\_data/pii\_masking.py}.}
 
 \subsection*{(c) IPv4 masking}
-\answer{I used a regex with each octet limited to 0--255. Matches are replaced with \texttt{|||IP\_ADDRESS|||}.}
+\answer{Implemented in \texttt{cs336\_data/pii\_masking.py}.}
 
 \subsection*{(d) Risks and mitigations}
 \answer{Naive masking has false positives like product IDs that look like phone numbers. It also has false negatives for international formats and obfuscated patterns. Over-masking can change writing style by inserting many placeholders. To reduce these risks I would use locale-specific rules and allowlists for catalog patterns. I would also run regular human audits and combine regex with a model-based detector.}
@@ -118,12 +114,11 @@ TODO: add the script here
 \answer{I sampled 20 WET records with at least one replacement. One false positive: a Spanish auto-parts page where BOSCH part number \texttt{0445110299} was masked as a phone number. One false negative: a Chinese page with an 11-digit hotline \texttt{13652918981} not matched by my US regex. Email masking looked good in this sample. IP masking did not occur.}
 
 \section{harmful\_content}
-TODO: add the script here
 \subsection*{(a) NSFW classifier}
-\answer{I used the Dolma fastText model \texttt{dolma\_fasttext\_nsfw\_jigsaw\_model.bin}. The function returns the top label (\texttt{nsfw} or \texttt{non-nsfw}) and its score after normalizing whitespace to one line.}
+\answer{Implemented in \texttt{cs336\_data/harmful\_content.py}.}
 
 \subsection*{(b) Toxic speech classifier}
-\answer{I used \texttt{dolma\_fasttext\_hatespeech\_jigsaw\_model.bin}. It returns the top label (\texttt{toxic} or \texttt{non-toxic}) and its score. The setup matches the NSFW classifier.}
+\answer{Implemented in \texttt{cs336\_data/harmful\_content.py}.}
 
 \subsection*{(c) Risks and mitigations}
 \answer{Naive harmful-content filtering removes useful sensitive text and keeps harmful text in low-resource languages. This biases the training data and creates uneven safety behavior. To reduce these risks, I would tune thresholds per language and per classifier. I would keep an abstain band for borderline scores. I would also audit the kept and removed samples with humans regularly.}
@@ -133,31 +128,29 @@ TODO: add the script here
 
 \section{gopher\_quality\_filters}
 \subsection*{(a) Implementation}
-\answer{I implemented the Gopher subset as a single boolean filter with regex tokenization. A document is rejected if it has fewer than 50 or more than 100{,}000 words, mean word length outside [3, 10], more than 30\% of non-empty lines ending in \texttt{...}, or fewer than 80\% of words with at least one alphabetic character. Alphabetic checks use \texttt{char.isalpha()}.
-TODO: add the script here
-}
+\answer{Implemented in \texttt{cs336\_data/gopher\_quality.py}.}
 
 \subsection*{(b) Manual audit of 20 examples}
 \answer{17/20 (85\%) passed the filter. Three rejections looked reasonable: a templated shopping page, a page with many symbolic tokens, and a short German civic page. The German page is a likely false positive because compound words inflated mean word length. Language-agnostic thresholds over-penalize some morphologies.}
 
 \section{quality\_classifier}
 \subsection*{(a) Training setup}
-\answer{I trained a fastText supervised classifier with labels \texttt{wiki} and \texttt{cc}. The training file is built from local fixture examples with a small fallback set. Training uses \texttt{wordNgrams=2}, subword features, and moderate epochs.}
+\answer{Implemented in \texttt{cs336\_data/quality\_classifier.py}.}
 
 \subsection*{(b) Classification function}
-\answer{The function normalizes input to one line, runs fastText top-1 prediction, and returns the label and score.}
+\answer{Implemented in \texttt{cs336\_data/quality\_classifier.py}.}
 
 \section{exact\_deduplication}
 \subsection*{Implementation}
-\answer{I used a two-pass approach. Pass 1 hashes each line with 64-bit \texttt{blake2b} and counts hashes across the corpus. Pass 2 rewrites each file to the output directory keeping only lines with a count of 1. Output filenames match the input. TODO: add the script here}
+\answer{Implemented in \texttt{cs336\_data/exact\_deduplication.py}.}
 
 \section{minhash\_deduplication}
-\subsection*{Implementation and hyperparameters}
-\answer{TODO: add the script here}
+\subsection*{Implementation}
+\answer{Implemented in \texttt{cs336\_data/minhash\_deduplication.py}.}
 
 \section{filter\_data}
 \subsection*{(a) Pipeline and discard breakdown}
-\answer{The pipeline in order: (1) English filter (\texttt{en} and score \(\ge 0.7\)), (2) NSFW filter (score \(\ge 0.8\)), (3) toxic filter (score \(\ge 0.9\)), (4) Gopher rules, (5) template-URI rule, (6) repeated-template-line rule, (7) PII masking on kept documents. I ran the full English-prefiltered WET corpus. The run processed 7{,}774{,}382 documents, kept 4{,}944{,}713, and dropped 2{,}829{,}669. Drop reasons: language 87, NSFW 10{,}283, toxic 5{,}771, Gopher 987{,}956, template-URI 306{,}084, template-repetition 1{,}519{,}488.}
+\answer{Implemented in \texttt{scripts/filter\_data.py}. The pipeline in order: (1) English filter (\texttt{en} and score \(\ge 0.7\)), (2) NSFW filter (score \(\ge 0.8\)), (3) toxic filter (score \(\ge 0.9\)), (4) Gopher rules, (5) template-URI rule, (6) repeated-template-line rule, (7) PII masking on kept documents. The run processed 7{,}774{,}382 documents, kept 4{,}944{,}713, and dropped 2{,}829{,}669. Drop reasons: language 87, NSFW 10{,}283, toxic 5{,}771, Gopher 987{,}956, template-URI 306{,}084, template-repetition 1{,}519{,}488.}
 
 \subsection*{(b) Runtime}
 \answer{I used 8 workers in parallel on Modal. Outputs were merged from per-shard files. Runtime is dominated by WET parsing and fastText calls and scales with document count.}
@@ -183,14 +176,14 @@ TODO: add the script here
 \answer{(1) \texttt{spectrum.library.concordia.ca}: academic repository page. Useful prose plus some navigation. (2) \texttt{creamteasociety.co.uk}: charity event page. Coherent text but menu-heavy. (3) \texttt{zestycrush.com}: travel web story. Readable prose. (4) \texttt{domries.com}: machinery product page. Short technical text plus catalog structure. (5) \texttt{myescambia.com}: county meetings page. Factual administrative text.}
 
 \subsection*{(b) Five removed examples}
-\answer{In the v2 run, removals were mostly template-related. \texttt{cs-medica.com}, \texttt{aecmag.com}, and \texttt{3rgbled.com} were dropped for repeated template lines. \texttt{cablefax.com/tag/...} was dropped by the template-URI rule. \texttt{wwffl.org/phpBB3/faq.php} was dropped for template repetition. This matches the aggregate counts. Only 87 documents were dropped by the language filter.}
+\answer{\texttt{cs-medica.com}, \texttt{aecmag.com}, and \texttt{3rgbled.com} were dropped for repeated template lines. \texttt{cablefax.com/tag/...} was dropped by the template-URI rule. \texttt{wwffl.org/phpBB3/faq.php} was dropped for template repetition. This matches the aggregate counts: only 87 documents were dropped by the language filter, while over 1.5 million were dropped for template repetition.}
 
 \subsection*{(c) Iterations}
 \answer{The main opportunity is tighter quality control for template-heavy English commercial and adult pages. A next iteration would strengthen domain and page-type filtering and raise harmful-content strictness for short snippets. Adding cross-document dedup before export would also help.}
 
 \section{tokenize\_data}
 \subsection*{Tokenization and dataset size}
-\answer{The script reads filtered JSONL, tokenizes each document with the GPT-2 tokenizer, appends \texttt{<|endoftext|>}, flattens the token IDs, and writes them as \texttt{np.uint16} via \texttt{tofile}. On the training snapshot, it wrote 5{,}512{,}089{,}641 tokens (11{,}024{,}179{,}282 bytes) from 3{,}859{,}975 documents. The kept-document count above is from a later filter rerun, so it differs from the snapshot used here.}
+\answer{Implemented in \texttt{scripts/tokenize\_data.py}. The dataset contains 5{,}512{,}089{,}641 tokens from 3{,}859{,}975 documents.}
 
 \section{train\_model}
 \subsection*{Training and best validation loss}
