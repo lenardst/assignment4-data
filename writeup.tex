@@ -196,6 +196,4 @@ The first clearly high-quality page is example 7 (UBC biography). It took 7 exam
     \caption{Training-loss curve from Modal logs, steps 4328--16383, with a 300-step rolling average. Earlier steps were not in the captured log tail.}
 \end{figure}
 
-\noindent The training loss (around 2.4--2.5 at the end) is lower than the validation loss (3.85) for two reasons. First, training loss is measured \emph{during} training, so the model has already been updated on those examples. Second, and more importantly, the validation set (Paloma C4) comes from a different source than the training data. C4 is a carefully curated web-text dataset, while the training data is filtered Common Crawl. The model has not been optimized for C4's style or domain distribution, so it unsurprisingly performs worse on it.
-
 \end{document}
