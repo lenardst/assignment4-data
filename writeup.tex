@@ -187,7 +187,7 @@ The first clearly high-quality page is example 7 (UBC biography). It took 7 exam
 
 \section{train\_model}
 \subsection*{Training and best validation loss}
-\answer{I trained with the provided training script on the tokenized full-corpus dataset on Modal. My captured log tail does not include the periodic eval lines from the training run, so I ran a follow-up evaluation pass (200 iterations) on the saved checkpoint. The estimated validation loss is \textbf{3.854356}.}
+\answer{I trained a GPT-2-sized model (~430M parameters) on the filtered and tokenized dataset (~5.5B tokens) using 8 B200 GPUs on Modal for 16,384 steps. The training data came from the full pipeline described above: English-filtered Common Crawl WET files, cleaned with language, quality, and harmful-content filters, then tokenized with the GPT-2 tokenizer. The log tail from the Modal run did not capture the periodic validation lines, so I ran a separate evaluation pass (200 iterations) on the saved checkpoint afterward. The estimated validation loss is \textbf{3.854356}.}
 
 \subsection*{Learning curve}
 \begin{figure}[H]
