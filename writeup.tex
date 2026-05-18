@@ -37,22 +37,13 @@
 \begin{document}
 \maketitle
 
-\section*{Collaboration Statement}
-\textbf{Collaborators:} \collaborators
-
-\section*{Reproducibility Notes}
-\begin{itemize}
-    \item Code: local working tree at submission time.
-    \item Environment: Python 3.12 with \texttt{uv} for local code. Training and evaluation on Modal with B200 GPUs.
-    \item Seeds: fastText models run deterministically. MinHash dedup uses seed 0. Inspection sampling uses seed 336.
-\end{itemize}
 
 \section{look\_at\_cc}
 \subsection*{(a) First WARC page}
-\answer{The first page URL is \url{http://020bld.cn.vauofnj.cn/html/991f998999.html}. The hostname does not resolve, so the page is not reachable now. From the HTML title and meta tags, the page is a Chinese article about cleaning lily pollen stains.}
+\answer{The first page URL is \url{http://020bld.cn.vauofnj.cn/html/991f998999.html}. The hostname does not resolve, so the page is not reachable now. From the translation of the HTML title and metadata, the page is a Chinese article about cleaning lily pollen stains.}
 
 \subsection*{(b) First WET page quality}
-\answer{Most of the extracted text is boilerplate: navigation links, contact info, and footer fragments. This text should be filtered out. Training on it would make the model produce repetitive template language. The core Q\&A content about lily pollen stains is the only useful part.}
+\answer{Most of the extracted text is the basic structure of the site: navigation links, contact info, and footer fragments. This text should be filtered out. Training on it would make the model produce template language, not coherent text. The Q\&A section about lily pollen stains is useful.}
 
 \subsection*{(c) Domain usefulness}
 \answer{The example is useful for training models on Chinese how-to or FAQ web content. It is not useful for training models on literary fiction.}
@@ -91,53 +82,60 @@ The first clearly high-quality page is example 7 (UBC biography). It took 7 exam
 
 \section{extract\_text}
 \subsection*{(a) Implementation}
-\answer{I implemented \texttt{extract\_text\_from\_html\_bytes}. It tries UTF-8 first. On failure it uses \texttt{resiliparse.parse.encoding.detect\_encoding} and decodes with \texttt{errors="replace"}. It then calls \texttt{resiliparse.extract.html2text.extract\_plain\_text}. The adapter passes \texttt{uv run pytest -k test\_extract\_text\_from\_html\_bytes}.}
+\answer{Script: \texttt{extract\_text\_from\_html\_bytes}.}
 
 \subsection*{(b) Comparison with WET}
-\answer{Both extractions recover the main topic text. Both keep some boilerplate like menus and footers. The WET output is slightly cleaner because Common Crawl applies extra heuristics on top of plain HTML to text.}
+\answer{Both extractions recover the main topic text. Both keep some structural content like menus and footers. The WET output is slightly cleaner because Common Crawl applies heuristics after plain HTML to text.}
 
 \section{language\_identification}
 \subsection*{(a) Implementation}
-\answer{I used fastText with \texttt{lid.176.bin}. The function returns the top language code and its score. I normalize whitespace to one line before prediction. I remap \texttt{zh*} variants to \texttt{zh}. The adapter passes \texttt{uv run pytest -k test\_identify\_language}.}
+\answer{I used fastText with \texttt{lid.176.bin}. Script: }
+TODO: add the script here
 
 \subsection*{(b) Risks and mitigations}
-\answer{Wrong language labels can drop target-language text or keep off-target text. This shifts the training distribution and hurts downstream quality. To reduce this risk I use a confidence threshold and audit samples. I would track per-language retention over time. For low-confidence cases I would use a second check or send them to an abstain bucket.}
+\answer{Wrong language labels can drop target-language text or keep off-target text. This shifts the training distribution and hurts downstream quality. To reduce this risk, I use a confidence threshold and audit samples. I would track per-language retention over time. For low-confidence cases, I would use a second check or send them to an abstain bucket.}
 
 \subsection*{(c) Manual audit of 20 examples}
-\answer{I sampled 20 WET documents and compared predictions with my own labels. Predictions matched the document language in this sample. The English fraction was 8/20 = 40\%. A confidence threshold around 0.7 keeps clearly English pages and drops ambiguous ones.}
+\answer{I sampled 20 WET documents and compared predictions with my own labels. Predictions matched the document language in this sample. The English fraction was 8/20 = 40\%. A confidence threshold around 0.7 keeps clearly English pages and drops ambiguous ones. Script: }
+TODO: add the script here
 
 \section{mask\_pii}
 \subsection*{(a) Email masking}
-\answer{I used a regex for standard email shapes \texttt{local@domain.tld}. It replaces each match with \texttt{|||EMAIL\_ADDRESS|||} and returns the count via \texttt{re.subn}. The adapter passes \texttt{uv run pytest -k test\_mask\_emails}.}
+TODO: add the script here
+
+\answer{I used a regex for standard email shapes \texttt{local@domain.tld}. It replaces each match with \texttt{|||EMAIL\_ADDRESS|||} and returns the count via \texttt{re.subn}.}
 
 \subsection*{(b) Phone masking}
-\answer{I used a US-focused regex covering \texttt{2831823829}, \texttt{283-182-3829}, \texttt{(283)-182-3829}, and \texttt{(283) 182 3829}. Matches are replaced with \texttt{|||PHONE\_NUMBER|||}. The adapter passes \texttt{uv run pytest -k test\_mask\_phones}.}
+\answer{I used a US-focused regex covering \texttt{2831823829}, \texttt{283-182-3829}, \texttt{(283)-182-3829}, and \texttt{(283) 182 3829}. Matches are replaced with \texttt{|||PHONE\_NUMBER|||}.}
 
 \subsection*{(c) IPv4 masking}
-\answer{I used a regex with each octet limited to 0--255. Matches are replaced with \texttt{|||IP\_ADDRESS|||}. The adapter passes \texttt{uv run pytest -k test\_mask\_ips}.}
+\answer{I used a regex with each octet limited to 0--255. Matches are replaced with \texttt{|||IP\_ADDRESS|||}.}
 
 \subsection*{(d) Risks and mitigations}
 \answer{Naive masking has false positives like product IDs that look like phone numbers. It also has false negatives for international formats and obfuscated patterns. Over-masking can change writing style by inserting many placeholders. To reduce these risks I would use locale-specific rules and allowlists for catalog patterns. I would also run regular human audits and combine regex with a model-based detector.}
 
 \subsection*{(e) Manual audit of 20 masked examples}
-\answer{I sampled 20 WET records with at least one replacement. One false positive: a Spanish auto-parts page where BOSCH part number \texttt{0445110299} was masked as a phone number. One false negative: a Chinese page with an 11-digit hotline \texttt{13652918981} not matched by my US regex. Email masking looked correct in this sample. IP masking did not trigger.}
+\answer{I sampled 20 WET records with at least one replacement. One false positive: a Spanish auto-parts page where BOSCH part number \texttt{0445110299} was masked as a phone number. One false negative: a Chinese page with an 11-digit hotline \texttt{13652918981} not matched by my US regex. Email masking looked good in this sample. IP masking did not occur.}
 
 \section{harmful\_content}
+TODO: add the script here
 \subsection*{(a) NSFW classifier}
-\answer{I used the Dolma fastText model \texttt{dolma\_fasttext\_nsfw\_jigsaw\_model.bin}. The function returns the top label (\texttt{nsfw} or \texttt{non-nsfw}) and its score after normalizing whitespace to one line. The adapter passes \texttt{uv run pytest -k test\_classify\_nsfw}.}
+\answer{I used the Dolma fastText model \texttt{dolma\_fasttext\_nsfw\_jigsaw\_model.bin}. The function returns the top label (\texttt{nsfw} or \texttt{non-nsfw}) and its score after normalizing whitespace to one line.}
 
 \subsection*{(b) Toxic speech classifier}
-\answer{I used \texttt{dolma\_fasttext\_hatespeech\_jigsaw\_model.bin}. It returns the top label (\texttt{toxic} or \texttt{non-toxic}) and its score. The setup matches the NSFW classifier. The adapter passes \texttt{uv run pytest -k test\_classify\_toxic\_speech}.}
+\answer{I used \texttt{dolma\_fasttext\_hatespeech\_jigsaw\_model.bin}. It returns the top label (\texttt{toxic} or \texttt{non-toxic}) and its score. The setup matches the NSFW classifier.}
 
 \subsection*{(c) Risks and mitigations}
-\answer{Naive harmful-content filtering removes useful sensitive text and keeps harmful text in low-resource languages. This biases the training data and creates uneven safety behavior. To reduce these risks I would tune thresholds per language and per classifier. I would keep an abstain band for borderline scores. I would also audit kept and removed samples with humans on a regular basis.}
+\answer{Naive harmful-content filtering removes useful sensitive text and keeps harmful text in low-resource languages. This biases the training data and creates uneven safety behavior. To reduce these risks, I would tune thresholds per language and per classifier. I would keep an abstain band for borderline scores. I would also audit the kept and removed samples with humans regularly.}
 
 \subsection*{(d) Manual audit of 20 examples}
-\answer{I ran both classifiers on 20 WET documents and compared with my own labels. The models flagged 1/20 (5\%) as harmful. One likely false positive was a Galician economics blog flagged as \texttt{toxic} with score 0.85. I did not see clear NSFW false negatives in this sample. A starting policy is to filter at \texttt{nsfw} score \(\ge 0.8\) and \texttt{toxic} score \(\ge 0.9\).}
+\answer{I ran both classifiers on 20 WET documents and compared them with my own labels. The models flagged 1/20 (5\%) as harmful. One likely false positive was a Galician economics blog flagged as \texttt{toxic} with score 0.85. I did not see clear NSFW false negatives in this sample. A starting policy is to filter at \texttt{nsfw} score \(\ge 0.8\) and \texttt{toxic} score \(\ge 0.9\).}
 
 \section{gopher\_quality\_filters}
 \subsection*{(a) Implementation}
-\answer{I implemented the Gopher subset as a single boolean filter with regex tokenization. A document is rejected if it has fewer than 50 or more than 100{,}000 words, mean word length outside [3, 10], more than 30\% of non-empty lines ending in \texttt{...}, or fewer than 80\% of words with at least one alphabetic character. Alphabetic checks use \texttt{char.isalpha()}. The ellipsis ratio uses only non-empty lines. The adapter passes \texttt{uv run pytest -k test\_gopher}.}
+\answer{I implemented the Gopher subset as a single boolean filter with regex tokenization. A document is rejected if it has fewer than 50 or more than 100{,}000 words, mean word length outside [3, 10], more than 30\% of non-empty lines ending in \texttt{...}, or fewer than 80\% of words with at least one alphabetic character. Alphabetic checks use \texttt{char.isalpha()}.
+TODO: add the script here
+}
 
 \subsection*{(b) Manual audit of 20 examples}
 \answer{17/20 (85\%) passed the filter. Three rejections looked reasonable: a templated shopping page, a page with many symbolic tokens, and a short German civic page. The German page is a likely false positive because compound words inflated mean word length. Language-agnostic thresholds over-penalize some morphologies.}
@@ -147,18 +145,15 @@ The first clearly high-quality page is example 7 (UBC biography). It took 7 exam
 \answer{I trained a fastText supervised classifier with labels \texttt{wiki} and \texttt{cc}. The training file is built from local fixture examples with a small fallback set. Training uses \texttt{wordNgrams=2}, subword features, and moderate epochs.}
 
 \subsection*{(b) Classification function}
-\answer{The function normalizes input to one line, runs fastText top-1 prediction, and returns the label and score. The adapter passes \texttt{uv run pytest -k test\_classify\_quality}.}
+\answer{The function normalizes input to one line, runs fastText top-1 prediction, and returns the label and score.}
 
 \section{exact\_deduplication}
 \subsection*{Implementation}
-\answer{I used a two-pass approach. Pass 1 hashes each line with 64-bit \texttt{blake2b} and counts hashes across the corpus. Pass 2 rewrites each file to the output directory keeping only lines with a count of 1. Output filenames match the input. The adapter passes \texttt{uv run pytest -k test\_exact\_line\_deduplication}.}
+\answer{I used a two-pass approach. Pass 1 hashes each line with 64-bit \texttt{blake2b} and counts hashes across the corpus. Pass 2 rewrites each file to the output directory keeping only lines with a count of 1. Output filenames match the input. TODO: add the script here}
 
 \section{minhash\_deduplication}
 \subsection*{Implementation and hyperparameters}
-\answer{Steps: normalize text, build word n-grams, compute MinHash signatures, bucket with LSH, verify candidates with exact Jaccard, cluster duplicates, and keep one document per cluster. Normalization applies lowercasing, NFD, accent removal, punctuation stripping, and whitespace normalization. MinHash uses mmh3 with multiple seeds. LSH splits signatures into equal-size bands. Cluster representatives are picked with a fixed seed.}
-
-\subsection*{Observed behavior}
-\answer{Both sanity checks in \texttt{uv run pytest -k test\_minhash\_deduplication} pass. The exact-duplicate test removes one of two identical files. The fuzzy-duplicate test clusters two MIT license documents and keeps one.}
+\answer{TODO: add the script here}
 
 \section{filter\_data}
 \subsection*{(a) Pipeline and discard breakdown}
